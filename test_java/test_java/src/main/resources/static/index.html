@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>肺炎分类检测系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        /* 新增：豆包链接样式 */
+        .douban-link {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .douban-link a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .douban-link a:hover {
+            text-decoration: underline;
+        }
+
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+        }
+
+        .upload-area:hover {
+            border-color: #2980b9;
+            background: #f8fbff;
+        }
+
+        .upload-area.active {
+            border-color: #2ecc71;
+            background: #f9fff9;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            display: block;
+            width: 200px;
+            height: 48px;
+            line-height: 48px;
+            text-align: center;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 0 auto;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-box {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            display: none;
+        }
+
+        .result-title {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .result-item {
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #34495e;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .image-preview {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: #e74c3c;
+        }
+
+        .success {
+            color: #2ecc71;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>肺炎分类检测系统</h1>
+
+    <!-- 新增：豆包链接区域 -->
+    <div class="douban-link">
+        <p>智能支持：<a href="https://www.doubao.com" target="_blank">豆包 AI</a></p>
+    </div>
+
+    <!-- 上传区域 -->
+    <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">📷</div>
+        <div class="upload-text">点击或拖拽图片到此处上传</div>
+        <input type="file" id="fileInput" accept="image/*">
+    </div>
+
+    <!-- 检测按钮 -->
+    <button class="btn" id="detectBtn" disabled>开始检测</button>
+
+    <!-- 加载中 -->
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        <div>正在检测，请稍候...</div>
+    </div>
+
+    <!-- 结果展示 -->
+    <div class="result-box" id="resultBox">
+        <div class="result-title">检测结果</div>
+        <div class="image-preview" id="imagePreview"></div>
+        <div class="result-item">
+            <span class="result-label">分类结果：</span>
+            <span id="predResult">-</span>
+        </div>
+        <div class="result-item">
+            <span class="result-label">置信度：</span>
+            <span id="confidence">-</span>
+        </div>
+        <div class="result-item">
+            <span class="result-label">模型类型：</span>
+            <span id="modelType">-</span>
+        </div>
+        <!-- 新增：结果页也显示豆包链接 -->
+        <div class="result-item" style="margin-top:15px; font-size:14px;">
+            <span class="result-label">AI 支持：</span>
+            <a href="https://www.doubao.com" target="_blank" style="color:#3498db;">豆包 AI</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========== 核心配置：替换为你的云服务器地址 ==========
+    const SERVER_URL = "https://uu857653-8224-9bcd913a.westb.seetacloud.com:8443/api/detect";
+    // 新增：豆包API地址（如果需要调用豆包接口可启用）
+    const DOUBAN_API_URL = "https://api.doubao.com/v1/chat/completions";
+
+    // DOM元素
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const detectBtn = document.getElementById('detectBtn');
+    const loading = document.getElementById('loading');
+    const resultBox = document.getElementById('resultBox');
+    const imagePreview = document.getElementById('imagePreview');
+    const predResult = document.getElementById('predResult');
+    const confidence = document.getElementById('confidence');
+    const modelType = document.getElementById('modelType');
+
+    // 上传区域点击触发文件选择
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // 拖拽上传
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('active');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('active');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('active');
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            handleFileSelect(e.dataTransfer.files[0]);
+        }
+    });
+
+    // 文件选择后处理
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            handleFileSelect(fileInput.files[0]);
+        }
+    });
+
+    // 处理选中的文件
+    function handleFileSelect(file) {
+        // 验证文件类型
+        if (!file.type.startsWith('image/')) {
+            alert('请选择图片文件！');
+            return;
+        }
+
+        // 显示预览图
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imagePreview.innerHTML = `<img src="${e.target.result}" alt="预览图">`;
+        };
+        reader.readAsDataURL(file);
+
+        // 启用检测按钮
+        detectBtn.disabled = false;
+    }
+
+    // 检测按钮点击事件
+    detectBtn.addEventListener('click', () => {
+        const file = fileInput.files[0];
+        if (!file) {
+            alert('请先选择图片！');
+            return;
+        }
+
+        // 显示加载中，隐藏结果
+        loading.style.display = 'block';
+        resultBox.style.display = 'none';
+        detectBtn.disabled = true;
+
+        // 构建FormData
+        const formData = new FormData();
+        formData.append('image', file); // 注意：参数名必须是image，和后端一致
+
+        // 发送请求到云服务器后端
+        fetch(SERVER_URL, {
+            method: 'POST',
+            body: formData,
+            mode: 'cors' // 跨域支持
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`服务器响应错误：${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // 隐藏加载中，显示结果
+                loading.style.display = 'none';
+                resultBox.style.display = 'block';
+
+                // 解析返回结果
+                if (data.code === 0 && data.data && data.data.detectResults.length > 0) {
+                    const result = data.data.detectResults[0];
+                    // 渲染结果
+                    predResult.textContent = result.className;
+                    predResult.className = 'success';
+                    confidence.textContent = `${result.confidence * 100}%`;
+                    modelType.textContent = data.data.modelInfo?.modelType || 'YOLO分类模型';
+
+                    // 渲染带标签的图片
+                    if (data.data.imageBase64) {
+                        imagePreview.innerHTML = `<img src="data:image/jpeg;base64,${data.data.imageBase64}" alt="检测结果图">`;
+                    }
+
+                    // 可选：调用豆包API获取更多AI建议（如需启用，替换你的API_KEY）
+                    // getDoubanAIAdvice(result.className);
+                } else {
+                    // 无检测结果
+                    predResult.textContent = '未检测到有效结果';
+                    predResult.className = 'error';
+                    confidence.textContent = '0%';
+                    modelType.textContent = '未知';
+                }
+            })
+            .catch(error => {
+                // 错误处理
+                loading.style.display = 'none';
+                resultBox.style.display = 'block';
+                predResult.textContent = '检测失败';
+                predResult.className = 'error';
+                confidence.textContent = '-';
+                modelType.textContent = '-';
+                console.error('检测错误：', error);
+                alert(`检测失败：${error.message}`);
+            })
+            .finally(() => {
+                // 重新启用按钮
+                detectBtn.disabled = false;
+            });
+    });
+
+    // 新增：调用豆包API获取AI建议的函数（如需启用请配置API_KEY）
+    async function getDoubanAIAdvice(diseaseType) {
+        try {
+            const response = await fetch(DOUBAN_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer 你的豆包API_KEY' // 替换为真实API_KEY
+                },
+                body: JSON.stringify({
+                    model: "doubao-pro",
+                    messages: [
+                        {
+                            role: "user",
+                            content: `请为${diseaseType}提供专业的医疗建议，要求简洁易懂，适合普通用户`
+                        }
+                    ]
+                })
+            });
+            const aiData = await response.json();
+            // 可将AI建议渲染到页面（示例）
+            // document.getElementById('aiAdvice').textContent = aiData.choices[0].message.content;
+        } catch (e) {
+            console.error('调用豆包API失败：', e);
+        }
+    }
+</script>
+</body>
+</html>
